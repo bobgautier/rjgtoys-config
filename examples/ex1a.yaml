@@ -1,0 +1,11 @@
+---
+
+
+name: ex1a
+param: 42
+other: ignore?
+
+__view__:
+  __main__.MyConfig:
+    name: name
+    param: param

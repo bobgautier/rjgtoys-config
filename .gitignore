@@ -1,0 +1,13 @@
+tests/unit/__pycache__
+htmlcov
+.coverage
+*pyc
+build
+dist
+junit.xml
+rjgtoys.config.egg-info/
+.eggs/
+*.pdf
+*.log
+*.aux
+*.db

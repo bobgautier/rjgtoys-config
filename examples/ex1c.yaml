@@ -1,0 +1,12 @@
+---
+
+case:
+  name: ex1c
+  port: 42
+param: 23
+other: ignore?
+
+__view__:
+  __main__.MyConfig:
+    name: case.name
+    param: case.port
