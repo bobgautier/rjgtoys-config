@@ -1,3 +1,20 @@
+"""
+
+Configuration data management.
+
+Provide modules with access to 'configuration' data.
+
+That data often comes from a 'configuration file' that is loaded
+at application startup time.
+
+The configuration data provides parameters that are inconvenient to
+specify in other ways and which need to be varied relatively infrequently.
+
+
+"""
+
+import sys
+import os
 
 import collections
 
@@ -7,7 +24,13 @@ from pydantic import BaseModel
 
 import weakref
 
+from typing import List, Any
+
+from rjgtoys.xc import Error, Title
+
 from ._yaml import yaml_load_path
+from ._source import YamlFileConfigSource, SearchPathConfigSource
+
 
 class Config(BaseModel):
     """A convenient alias for :cls:`pydantic.BaseModel`."""
@@ -22,16 +45,25 @@ class _ConfigAction(Action):
         ConfigManager.set_path(values)
 
 
-class ConfigUpdateError(Exception):
+class ConfigUpdateError(Error):
     """Raised if there's a problem loading configuration values."""
 
-    def __init__(self, errors):
-        """Errors is a list of (proxy, exception) pairs."""
+    errors: List[Any] = Title("A list of (proxy, exception) pairs")
 
-        self.errors = errors
+    detail = "There were error(s) loading the configuration"
 
-    def __str__(self):
-        return "Error(s) loading configuration"
+
+def default_app_name():
+    """Generate a default application name."""
+
+    # Try to use the script name
+
+    name = os.path.basename(sys.argv[0]).split('.',1)[0]
+
+    # Not sure what else to try!
+
+    return name
+
 
 
 class ConfigManager:
@@ -49,13 +81,34 @@ class ConfigManager:
 
     """
 
-    default_source = None
+    # The application name that will be inserted into config paths as {app}
+
+    app_name = default_app_name()
+
+    # The configuration source; if necessary a None will be replaced by
+    # a search path (see DEFAULT SEARCH below)
+
+    source = None
+
+    # Has the data been loaded?
 
     loaded = False
 
+    # If so, this is the data
+
     data = None
 
+    # List of registered proxies that need to be notified when data is loaded
+
     proxies = []
+
+    # Default list of places to search
+
+    DEFAULT_SEARCH = [
+        './{app}.conf',
+        '~/.{app}.conf',
+        '/etc/{app}.conf'
+        ]
 
     @classmethod
     def set_path(cls, path):
@@ -67,8 +120,28 @@ class ConfigManager:
         if path is None:
             return
 
-        cls.default_source = path
+        cls.source = YamlFileConfigSource(path, resolve=cls._resolve_path)
         cls.loaded = False
+
+    @classmethod
+    def set_search(cls, *paths):
+        """Set search path for a subsequent load."""
+
+        if not paths:
+            return
+
+        paths = [p.format(app=cls.app_name) for p in paths]
+
+        cls.source = SearchPathConfigSource(*paths, resolve=cls._resolve_path)
+        cls.loaded = False
+
+    @classmethod
+    def _resolve_path(cls, path):
+        return os.path.expanduser(path.format(app=cls.app_name))
+
+    @classmethod
+    def set_app_name(cls, name):
+        cls.app_name = name
 
     @classmethod
     def load(cls):
@@ -77,7 +150,14 @@ class ConfigManager:
         if cls.loaded:
             return
 
-        data = yaml_load_path(cls.default_source)
+        if cls.source is None:
+            print("Using default search %s" % (cls.DEFAULT_SEARCH))
+            cls.source = SearchPathConfigSource(
+                *cls.DEFAULT_SEARCH,
+                resolve=cls._resolve_path
+            )
+
+        data = cls.source.fetch()
 
         cls.data = config_resolve(data)
 
@@ -121,6 +201,7 @@ class ConfigManager:
             except Exception as e:
                 raise ConfigUpdateError([(proxy, e)])
 
+
 class ConfigProxy:
     """A 'proxy' for the configuration data needed by a client module.
 
@@ -137,13 +218,13 @@ class ConfigProxy:
 
         ConfigManager.attach(self)
 
-
     def update(self, data):
         """Called when new configuration data is available."""
 
         self._value = self._get_view(data, self._modelname, self._model)
 
     def _get_view(self, data, viewname, model):
+        """Build a view of the data, and use it to instantiate 'model'."""
 
         view = data.get('__view__')
         if view is not None:
@@ -182,6 +263,10 @@ class ConfigProxy:
 
     def add_arguments(self, parser, default=None):
 
+        # Get an 'application name' from the parser
+        app_name = parser.prog.split('.',1)[0]
+
+        ConfigManager.set_app_name(app_name)
         ConfigManager.set_path(default)
 
         parser.add_argument(
@@ -192,6 +277,10 @@ class ConfigProxy:
             dest="_config_path",
             default=default
         )
+
+    def set_app_name(self, name):
+
+        ConfigManager.set_app_name(name)
 
 def getConfig(cls):
     """Return a 'config' object that can fetch configuration data."""

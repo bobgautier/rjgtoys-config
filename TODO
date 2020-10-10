@@ -1,0 +1,15 @@
+Todo
+
+2020-10-02
+
+Easy way to set up a list of places to try by default
+
+    A default set of path *templates*, and you provide
+    a set of values for the variables (e.g. 'name')
+
+    [ './{name}.conf', '~/.{name}.conf', '/etc/{name}.conf' ]
+
+Have the --config option replace the entire search list?
+
+Don't force people to use Pydantic?
+
