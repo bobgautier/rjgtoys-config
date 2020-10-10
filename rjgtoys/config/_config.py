@@ -141,23 +141,36 @@ class ConfigProxy:
     def update(self, data):
         """Called when new configuration data is available."""
 
+        self._value = self._get_view(data, self._modelname, self._model)
+
+    def _get_view(self, data, viewname, model):
+
         view = data.get('__view__')
         if view is not None:
-            view = view.get(self._modelname)
+            view = view.get(viewname)
         if view is None:
             # build a default view
 
-            schema = self._model.schema()
+            schema = model.schema()
             view = { n: n for n in schema['properties'].keys() }
 
         value = {}
         for n, k in view.items():
             try:
-                value[n] = data[k]
+                value[n] = self._getitem(data, k)
             except KeyError:
                 pass
 
-        self._value = self._model(**value)
+        return model(**value)
+
+    @staticmethod
+    def _getitem(data, path):
+        """Like getitem, but understands paths: m['a.b'] = m['a']['b'] """
+
+        for p in path.split('.'):
+            data = data[p]
+
+        return data
 
     def __getattr__(self, name):
         ConfigManager.load()
