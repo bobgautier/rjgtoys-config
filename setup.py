@@ -4,7 +4,7 @@ from rjgtoys.projects import setup
 
 
 setup(
-    name = "rjgtoys.config",
+    name = "rjgtoys-config",
     version = "0.0.1",
     author = "Bob Gautier",
     author_email = "bob.gautier@gmail.com",
