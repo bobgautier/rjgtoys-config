@@ -17,4 +17,8 @@ setup(
         "Development Status :: 2 - Pre-Alpha",
         "License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)"
         ],
+    install_requires=[
+        'ruamel.yaml',
+        'rjgtoys-xc',
+    ]
 )
