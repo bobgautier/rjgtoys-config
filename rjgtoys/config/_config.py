@@ -20,6 +20,8 @@ import collections
 
 from argparse import Action
 
+from typing import Optional, Callable
+
 from pydantic import BaseModel
 
 import weakref
@@ -28,14 +30,9 @@ from typing import List, Any
 
 from rjgtoys.xc import Error, Title
 
-from ._yaml import yaml_load_path
-from ._source import YamlFileConfigSource, SearchPathConfigSource
+from rjgtoys.config._yaml import yaml_load_path
+from rjgtoys.config._source import YamlFileConfigSource, SearchPathConfigSource
 
-
-class Config(BaseModel):
-    """A convenient alias for :cls:`pydantic.BaseModel`."""
-
-    pass
 
 
 class _ConfigAction(Action):
@@ -50,7 +47,7 @@ class ConfigUpdateError(Error):
 
     errors: List[Any] = Title("A list of (proxy, exception) pairs")
 
-    detail = "There were error(s) loading the configuration"
+    detail = "There were error(s) loading the configuration: {errors}"
 
 
 def default_app_name():
@@ -107,8 +104,16 @@ class ConfigManager:
     DEFAULT_SEARCH = [
         './{app}.conf',
         '~/.{app}.conf',
+        '~/.config/rjgtoys/{app}/{app}.conf',
+        '~/.config/rjgtoys/{app}.conf',
         '/etc/{app}.conf'
         ]
+
+    FALLBACK_PATH = None
+
+    @classmethod
+    def get_search_env(cls):
+        return dict(app=cls.app_name)
 
     @classmethod
     def set_path(cls, path):
@@ -130,14 +135,13 @@ class ConfigManager:
         if not paths:
             return
 
-        paths = [p.format(app=cls.app_name) for p in paths]
-
         cls.source = SearchPathConfigSource(*paths, resolve=cls._resolve_path)
         cls.loaded = False
 
     @classmethod
     def _resolve_path(cls, path):
-        return os.path.expanduser(path.format(app=cls.app_name))
+        env = cls.get_search_env()
+        return os.path.expanduser(path.format(**env))
 
     @classmethod
     def set_app_name(cls, name):
@@ -151,15 +155,17 @@ class ConfigManager:
             return
 
         if cls.source is None:
-            print("Using default search %s" % (cls.DEFAULT_SEARCH))
+#            print("Using default search %s" % (cls.DEFAULT_SEARCH))
             cls.source = SearchPathConfigSource(
                 *cls.DEFAULT_SEARCH,
+                cls.FALLBACK_PATH,
                 resolve=cls._resolve_path
             )
 
         data = cls.source.fetch()
 
         cls.data = config_resolve(data)
+        cls.loaded = True
 
         # Figure out which proxies are still live, and update them
 
@@ -179,12 +185,13 @@ class ConfigManager:
             try:
                 p.update(cls.data)
             except Exception as e:
+                #raise
                 errors.append((p, e))
 
         # Report any errors
 
         if errors:
-            raise ConfigUpdateError(errors)
+            raise ConfigUpdateError(errors=errors)
 
     @classmethod
     def attach(cls, proxy):
@@ -210,13 +217,24 @@ class ConfigProxy:
     of the configuration data model itself.
     """
 
-    def __init__(self, model):
+    manager_type = ConfigManager
+
+    def __init__(self, model, manager_type=None):
         self._model = model
         self._modelname = "%s.%s" % (model.__module__, model.__qualname__)
 
         self._value = None
 
-        ConfigManager.attach(self)
+        self._manager = manager_type or self.manager_type
+
+        self._manager.attach(self)
+
+    def __str__(self):
+        """Produce a helpful string representation."""
+
+        return self._modelname
+
+    __repr__ = __str__
 
     def update(self, data):
         """Called when new configuration data is available."""
@@ -254,38 +272,73 @@ class ConfigProxy:
         return data
 
     def __getattr__(self, name):
-        ConfigManager.load()
+        self._manager.load()
         return getattr(self._value, name)
 
     @property
     def value(self):
+        self._manager.load()
         return self._value
 
-    def add_arguments(self, parser, default=None):
+    def add_arguments(self, parser, default=None, adjacent_to=None):
 
         # Get an 'application name' from the parser
         app_name = parser.prog.split('.',1)[0]
 
-        ConfigManager.set_app_name(app_name)
-        ConfigManager.set_path(default)
+        self._manager.set_app_name(app_name)
+
+        if adjacent_to:
+            default = os.path.join(os.path.dirname(adjacent_to), default)
+
+        # Use the default if none other can be found, or if none is specified
+
+        self._manager.FALLBACK_PATH = default
 
         parser.add_argument(
             '--config',
             type=str,
             help="Path to configuration file",
             action=_ConfigAction,
-            dest="_config_path",
-            default=default
+            dest="_config_path"
         )
 
     def set_app_name(self, name):
 
-        ConfigManager.set_app_name(name)
+        self._manager.set_app_name(name)
 
-def getConfig(cls):
-    """Return a 'config' object that can fetch configuration data."""
+#
+# Create a name for ConfigProxy that's reminiscent of
+# logging.getLogger
+#
 
-    return ConfigProxy(cls)
+getConfig = ConfigProxy
+
+
+class Config(BaseModel):
+    """A base class for configuration parameter objects.
+
+    A convenient alias for :cls:`pydantic.BaseModel`.
+
+    """
+
+    # The following is an alternative to the getConfig()
+    # function below.  I added it in the hope of avoiding
+    # having too many things to import from rjgtoys.config
+    # (you can just import the Config class, now) but on the
+    # other hand it gets a bit mixed up with the pydantic
+    # machinery; pydantic thinks the constructor takes
+    # a proxy_type parameter.
+
+    proxy_type: Optional[Callable] = ConfigProxy
+
+    @classmethod
+    def value(cls, other=None, proxy_type=None):
+
+        other = other or cls
+
+        proxy_type = proxy_type or other.proxy_type
+
+        return proxy_type(other or cls)
 
 
 def config_resolve(raw):
@@ -297,6 +350,11 @@ def config_resolve(raw):
         defaults = raw['defaults']
     except KeyError:
         return raw
+
+    # If only a single set of defaults, work around it
+
+    if isinstance(defaults, collections.abc.Mapping):
+        defaults = (defaults,)
 
     result = {}
     for layer in defaults:

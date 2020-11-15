@@ -20,7 +20,6 @@ def test_use_default_search():
         a: int = 3
         b: int = 2
 
-
     app_name = sentinel.app_name
 
     print("Using app_name %s" % (app_name))
@@ -39,6 +38,8 @@ def test_use_default_search():
             for p in [
             './{app}.conf',
             '~/.{app}.conf',
+            '~/.config/rjgtoys/{app}/{app}.conf',
+            '~/.config/rjgtoys/{app}.conf',
             '/etc/{app}.conf'
             ]
     ]

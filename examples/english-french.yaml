@@ -1,0 +1,7 @@
+# examples/english-french.yaml
+
+---
+words:
+    dog: chien
+    cat: chat
+    bird: oiseau

@@ -1,0 +1,5 @@
+defaults: !include english-french.yaml
+
+words:
+  snail: escargot
+

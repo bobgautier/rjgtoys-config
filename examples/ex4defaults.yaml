@@ -1,0 +1,7 @@
+#
+# Defaults for example 4
+#
+---
+a: fromdefaults
+b: fromdefaults
+c: fromdefaults

@@ -1,5 +1,35 @@
 Todo
 
+2020-11-15
+
+Improve the way defaults and views are applied:
+
+The view mapping that applies to the data in a file
+should be the mapping that is defined by the file or
+by something it includes as a default.
+
+This is so that I can include defaults that use a different mapping
+to the one I'm using, yet get them applied sensibly.
+
+Example:
+
+   a: 1
+
+   defaults:
+     b: 2
+     __view__:
+       user:
+         setting: b
+         param: c
+    __view__:
+      user:
+        setting: a
+
+Where does the top-level view get its 'param' from?   I think I need a rule that
+attributes that are not mentioned are mapped 'directly', by name (so param=param)
+
+
+
 2020-10-02
 
 Easy way to set up a list of places to try by default

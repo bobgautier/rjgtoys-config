@@ -13,6 +13,7 @@ from ._yaml import yaml_load_path
 
 
 class ConfigSearchFailed(Error):
+    """Raised when no configuration file could be found"""
 
     paths: List[str] = Title('List of paths that were searched')
 
@@ -32,12 +33,13 @@ class ConfigSource:
 
 
 def resolve_noop(path):
-    """'Resolve' a path by doing nothing to it."""
+    """The default 'resolve path' action; just returns the path it was given."""
 
     return path
 
 
 class YamlFileConfigSource(ConfigSource):
+    """Reads a configuration from YAML."""
 
     def __init__(self, path, resolve=None):
         super().__init__()
@@ -54,11 +56,12 @@ class YamlFileConfigSource(ConfigSource):
 
 
 class SearchPathConfigSource(ConfigSource):
+    """Searches a number of places for a configuration file."""
 
     def __init__(self, *paths, resolve=None, loader=None):
         self.loader = loader or YamlFileConfigSource
         self.resolve = resolve or resolve_noop
-        self.paths = paths
+        self.paths = [p for p in paths if p]
 
     def fetch(self):
         tries = []
@@ -66,8 +69,9 @@ class SearchPathConfigSource(ConfigSource):
             p = self.resolve(p)
             tries.append(p)
             if not os.path.exists(p):
+#                print("SearchPathConfigSource did not find %s" % (p))
                 continue
+#            print("SearchPathConfigSource using %s" % (p))
             return self.loader(p).fetch()
         raise ConfigSearchFailed(paths=tries)
-
 

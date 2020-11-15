@@ -1,0 +1,8 @@
+#
+# Configuration for example4
+
+defaults: !include ex4defaults.yaml
+
+a: 1
+c: overridden
+

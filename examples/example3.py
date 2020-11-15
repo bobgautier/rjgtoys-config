@@ -1,5 +1,6 @@
 
 import argparse
+import os
 
 from rjgtoys.config import getConfig, Config
 
@@ -14,7 +15,7 @@ def main():
 
     p = argparse.ArgumentParser('example')
 
-    cfg.add_arguments(p, default='example3.yaml')
+    cfg.add_arguments(p, default=os.path.join(os.path.dirname(__file__), 'ex3.yaml'))
 
     args = p.parse_args()
     print(f"Args: {args}")
