@@ -162,9 +162,8 @@ class ConfigManager:
                 resolve=cls._resolve_path
             )
 
-        data = cls.source.fetch()
+        cls.data = cls.source.fetch()
 
-        cls.data = config_resolve(data)
         cls.loaded = True
 
         # Figure out which proxies are still live, and update them
@@ -241,35 +240,121 @@ class ConfigProxy:
 
         self._value = self._get_view(data, self._modelname, self._model)
 
+
     def _get_view(self, data, viewname, model):
-        """Build a view of the data, and use it to instantiate 'model'."""
 
-        view = data.get('__view__')
-        if view is not None:
-            view = view.get(viewname)
-        if view is None:
-            # build a default view
+        schema = model.schema()
 
-            schema = model.schema()
-            view = { n: n for n in schema['properties'].keys() }
+        view = self._get_view_dict(data, viewname, schema)
+        #print("_get_view %s is %s" % (viewname, view))
+        return model(**view)
+
+    def _get_view_dict(self, data, viewname, schema):
+
+        # Do we have any defaults?
+
+        defaults = resolve_defaults(data)
+
+        #print("_get_view_dict data %s defaults %s" % (data, defaults))
+
+        if defaults:
+            data_defaults = self._get_view_dict(defaults, viewname, schema)
+        else:
+            data_defaults = {}
+
+        view = self._get_view_mapping(data, viewname, schema)
+
+        #print("Use view: %s" % (view))
 
         value = {}
         for n, k in view.items():
             try:
-                value[n] = self._getitem(data, k)
+                value[n] = self._get_defaulted(data, k)
             except KeyError:
                 pass
 
-        return model(**value)
+        return value
 
-    @staticmethod
-    def _getitem(data, path):
-        """Like getitem, but understands paths: m['a.b'] = m['a']['b'] """
+    def _get_view_mapping(self, data, viewname, schema):
+        """Get the view mapping for viewname."""
 
-        for p in path.split('.'):
-            data = data[p]
+        # Get the view mapping, if any
+        # This is allowed to chase down defaults
+        # if necessary
 
-        return data
+        try:
+            view = self._get_defaulted(data, '__view__.%s' % (viewname))
+        except KeyError:
+            view = {}
+
+        # Fill in any missing fields; those map directly to their names in the data
+
+        view.update({ n: n for n in schema['properties'].keys() if n not in view })
+
+        return view
+
+    def _get_defaulted(self, data, item):
+        """Get an item from data, using defaults if available."""
+
+        missing = True
+        try:
+            value = self._getitem(data, item)
+            missing = False
+        except KeyError:
+            pass
+
+        # Try to return the default instead
+
+        defaults = resolve_defaults(data)
+
+        if not defaults:
+            if missing:
+                raise KeyError(item)
+            return value
+
+        try:
+            default = self._get_defaulted(defaults, item)
+            # If there was no explicit value, then the default
+            # is the answer
+            if missing:
+                return default
+        except KeyError:
+            # No default.  If also no explicit value, we've no answer.
+            # otherwise, use the explicit value.
+            if missing:
+                raise
+            else:
+                return value
+
+        # Not missing, and there's a default.
+
+        # If it's not a mapping, we return the explicit value
+
+        if not isinstance(value, collections.abc.Mapping):
+            return value
+
+        # Override default from explicit, return the result
+
+        config_merge(value, default)
+
+        return default
+
+    def _getitem(self, data, path):
+        """Like getitem, but understands paths: m['a.b'] = m['a']['b']
+
+        Also understands that some dicts have keys that contain dots.
+        """
+
+        try:
+            return data[path]
+        except KeyError:
+            if '.' not in path:
+                raise
+
+        (p, q) = path.split('.',1)
+
+        data = data[p]
+        return self._getitem(data, q)
 
     def __getattr__(self, name):
         self._manager.load()
@@ -346,10 +431,30 @@ def config_resolve(raw):
 
     # If there are no defaults to apply, just return the raw data
 
+    defaults = resolve_defaults(raw)
+    if not defaults:
+        return raw
+
+    del raw['defaults']
+
+    # override defaults with raw data, return result
+
+    config_merge(raw, defaults)
+
+    return defaults
+
+
+def resolve_defaults(raw):
+    """Resolve 'defaults' in some raw config data."""
+
+    # If there are no defaults to apply, just return an empty dict
+
+#    print("resolve_defaults %s" % (raw))
+
     try:
         defaults = raw['defaults']
     except KeyError:
-        return raw
+        return {}
 
     # If only a single set of defaults, work around it
 
@@ -361,12 +466,7 @@ def config_resolve(raw):
         layer = config_resolve(layer)
         config_merge(layer, result)
 
-    del raw['defaults']
-
-    config_merge(raw, result)
-
     return result
-
 
 def config_merge(part, result):
     """Merge a set of defaults 'part' into 'result'."""

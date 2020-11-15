@@ -28,6 +28,24 @@ Example:
 Where does the top-level view get its 'param' from?   I think I need a rule that
 attributes that are not mentioned are mapped 'directly', by name (so param=param)
 
+----
+
+More agony over defaults and view mappings.
+
+The view mapping that applies to a given level of the structure
+should be the one that is defined at this level or below (never above).
+
+To get a view of something, first get the view in its 'defaults',
+then 'explicit', and merge the two.
+
+merging:
+
+    if not in explicit, use default if available
+
+    if explicit, but it's a mapping, merge
+        the two maps.
+
+To get the view definition, merge the defaulted and explicit view definitions
 
 
 2020-10-02
