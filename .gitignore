@@ -5,7 +5,7 @@ htmlcov
 build
 dist
 junit.xml
-rjgtoys.config.egg-info/
+*.egg-info/
 .eggs/
 *.pdf
 *.log

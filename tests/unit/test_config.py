@@ -131,7 +131,8 @@ def test_get_view_simple():
             }
         },
         't1a': 'test1-a',
-        't1b': 'test1-b'
+        't1b': 'test1-b',
+        'defaults': {}
     }
 
     class TestConfig(Config):
@@ -163,7 +164,9 @@ def test_get_view_path():
         't1': {
             'a': 'test1-a',
             'b': 'test1-b'
-        }
+        },
+        'defaults': {}
+
     }
 
     class TestConfig(Config):

@@ -162,7 +162,9 @@ class ConfigManager:
                 resolve=cls._resolve_path
             )
 
-        cls.data = cls.source.fetch()
+        data = cls.source.fetch()
+
+        cls.data = config_normalise(data)
 
         cls.loaded = True
 
@@ -253,7 +255,7 @@ class ConfigProxy:
 
         # Do we have any defaults?
 
-        defaults = resolve_defaults(data)
+        defaults = data['defaults']
 
         #print("_get_view_dict data %s defaults %s" % (data, defaults))
 
@@ -266,24 +268,22 @@ class ConfigProxy:
 
         #print("Use view: %s" % (view))
 
-        value = {}
         for n, k in view.items():
             try:
-                value[n] = self._get_defaulted(data, k)
+                data_defaults[n] = self._get_defaulted(data, k)
             except KeyError:
                 pass
 
-        return value
+        return data_defaults
 
     def _get_view_mapping(self, data, viewname, schema):
         """Get the view mapping for viewname."""
 
         # Get the view mapping, if any
-        # This is allowed to chase down defaults
-        # if necessary
+        # defaults have already been applied
 
         try:
-            view = self._get_defaulted(data, '__view__.%s' % (viewname))
+            view = data['__view__'][viewname]
         except KeyError:
             view = {}
 
@@ -305,7 +305,7 @@ class ConfigProxy:
 
         # Try to return the default instead
 
-        defaults = resolve_defaults(data)
+        defaults = data['defaults']
 
         if not defaults:
             if missing:
@@ -334,6 +334,7 @@ class ConfigProxy:
             return value
 
         # Override default from explicit, return the result
+        # TODO?  Exception is default is not also a Mapping?
 
         config_merge(value, default)
 
@@ -424,6 +425,49 @@ class Config(BaseModel):
         proxy_type = proxy_type or other.proxy_type
 
         return proxy_type(other or cls)
+
+
+def config_normalise(raw):
+    """Normalise a config object to make it easier to process later.
+
+    Ensure it has both 'defaults' and '__view__' entries, that
+    'defaults' is a single map, and '__view__' represents a merge
+    of any 'local' '__view__' with that of the 'defaults'.
+    """
+
+    result = dict(raw)
+
+    defaults = normalise_defaults(raw)
+
+    result['defaults'] = defaults
+
+    view = dict(defaults.get('__view__', {}))
+    local_view = raw.get('__view__', {})
+
+    config_merge(local_view, view)
+
+    result['__view__'] = view
+
+    return result
+
+def normalise_defaults(raw):
+
+    try:
+        defaults = raw['defaults']
+    except KeyError:
+        return {}
+
+    # If only a single set of defaults, work around it
+
+    if isinstance(defaults, collections.abc.Mapping):
+        return config_normalise(defaults)
+
+    result = {}
+    for layer in defaults:
+        layer = config_normalise(layer)
+        config_merge(layer, result)
+
+    return result
 
 
 def config_resolve(raw):
