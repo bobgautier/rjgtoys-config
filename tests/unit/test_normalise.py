@@ -1,23 +1,24 @@
 
+from rjgtoys.config.thing import Thing
 from rjgtoys.config._config import config_normalise, normalise_defaults
 
 def test_normalise_defaults_missing():
 
-    data = dict(a=1)
+    data = Thing(a=1)
     assert normalise_defaults(data) == {}
 
 def test_normalise_defaults_simple():
 
-    defaults = dict(b=2)
+    defaults = Thing(b=2)
 
-    expected = dict(
-                defaults={},
-                __view__={}
+    expected = Thing(
+                defaults=Thing(),
+                __view__=Thing()
                 )
     expected.update(defaults)
 
 
-    data = dict(
+    data = Thing(
             defaults=defaults,
             a=1
         )
@@ -29,28 +30,28 @@ def test_normalise_defaults_simple():
 
 def test_config_normalise_triv():
 
-    data = dict(a=1)
+    data = Thing(a=1)
 
     result = config_normalise(data)
 
-    assert result == dict(
-        defaults={},
+    assert result == Thing(
+        defaults=Thing(),
         a=1,
-        __view__={}
+        __view__=Thing()
         )
 
 def test_config_normalise_easy():
 
-    views = {
-        'x.y': dict(x='a')
-    }
+    views = Thing({
+        'x.y': Thing(x='a')
+    })
 
-    defaults = dict(
+    defaults = Thing(
         b=2,
         __view__=views
     )
 
-    data = dict(
+    data = Thing(
         defaults=defaults,
         a=1
     )
@@ -59,9 +60,9 @@ def test_config_normalise_easy():
 
     # Expect the view definition to be copied up
 
-    assert result == dict(
-        defaults=dict(
-            defaults={},
+    assert result == Thing(
+        defaults=Thing(
+            defaults=Thing(),
             b=2,
             __view__=views
         ),
@@ -71,36 +72,36 @@ def test_config_normalise_easy():
 
 def test_config_normalise_merging():
 
-    views = {
-        'x.y': dict(x='a')
-    }
+    views = Thing({
+        'x.y': Thing(x='a')
+    })
 
-    defaults = dict(
+    defaults = Thing(
         b=2,
         __view__=views
     )
 
-    data = dict(
+    data = Thing(
         defaults=defaults,
         a=1,
-        __view__={
-            'x.z': dict(z='b')
-        }
+        __view__=Thing({
+            'x.z': Thing(z='b')
+        })
     )
 
     result = config_normalise(data)
 
     # Expect the view definition to be copied up
 
-    assert result == dict(
-        defaults=dict(
-            defaults={},
+    assert result == Thing(
+        defaults=Thing(
+            defaults=Thing(),
             b=2,
             __view__=views
         ),
         a=1,
-        __view__={
-                'x.y': dict(x='a'),
-                'x.z': dict(z='b')
-        }
+        __view__=Thing({
+                'x.y': Thing(x='a'),
+                'x.z': Thing(z='b')
+        })
     )

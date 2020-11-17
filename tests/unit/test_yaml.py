@@ -1,7 +1,7 @@
 
 import os
 
-from rjgtoys.blobs._yaml import Thing, yaml_load
+from rjgtoys.config.yaml import yaml_load
 
 
 def test_loads():
@@ -14,9 +14,7 @@ x:
 
     obj = yaml_load(data)
 
-    assert obj.x.a == 2
-
-    assert isinstance(obj, Thing)
+    assert obj['x']['a'] == 2
 
 
 def test_load_file():

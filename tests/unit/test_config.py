@@ -4,6 +4,7 @@ Tests for the config machinery.
 
 """
 
+from rjgtoys.config.thing import Thing
 from rjgtoys.config._config import Config, ConfigProxy, config_resolve, config_merge
 
 def test_config_merge_to_empty():
@@ -64,7 +65,7 @@ def test_config_merge_mapping():
 def test_config_resolve_triv():
     """Resolution works when there are no defaults."""
 
-    data = dict(a=1, b='two')
+    data = Thing(a=1, b='two')
 
     result = config_resolve(data)
 
@@ -74,7 +75,7 @@ def test_config_resolve_triv():
 def test_config_resolve_simple():
     """A simple resolution case works."""
 
-    data = dict(
+    data = Thing.from_object(
         defaults=[
             dict(a=0,b='absent', c=3)
             ],
@@ -84,7 +85,7 @@ def test_config_resolve_simple():
 
     result = config_resolve(data)
 
-    assert result == dict(
+    assert result == Thing(
         a=1,
         b='two',
         c=3
@@ -94,7 +95,7 @@ def test_config_resolve_simple():
 def test_config_resolve_nested():
     """Resolve works when there are two levels of defaulting."""
 
-    data = dict(
+    data = Thing.from_object(
         defaults=[
             dict(
                 defaults=[
@@ -110,7 +111,7 @@ def test_config_resolve_nested():
 
     result = config_resolve(data)
 
-    assert result == dict(
+    assert result == Thing(
         a='zero',
         b=1,
         c=3,

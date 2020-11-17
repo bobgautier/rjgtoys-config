@@ -16,10 +16,21 @@ import sys
 
 import ruamel.yaml as yaml
 
+from rjgtoys.xc import Error, Title
 
-# from https://stackoverflow.com/questions/528281/how-can-i-include-a-yaml-file-inside-another
+from rjgtoys.config.thing import Thing
+
+
+class YamlCantLoad(Error):
+    """Raised on an attempt to load YAML from something that is neither file nor directory."""
+
+    path: str = Title("The path that couldn't be read")
+
+    detail = "Can't read YAML from non-file, non-directory '{path}'"
+
 
 class IncludeLoader(yaml.Loader):
+    # from https://stackoverflow.com/questions/528281/how-can-i-include-a-yaml-file-inside-another
     """
     yaml.Loader subclass handles "!include path/to/foo.yml" directives in config
     files.  When constructed with a file object, the root path for includes
@@ -55,9 +66,16 @@ class IncludeLoader(yaml.Loader):
 
     DEFAULT_INCLUDE_TAG="!include"
 
+    DEFAULT_MAPPING_TYPE=Thing
+
     def __init__(self, *args, **kwargs):
         super(IncludeLoader, self).__init__(*args, **kwargs)
         self.add_constructor(self.DEFAULT_INCLUDE_TAG, self._include)
+
+        self.add_constructor(
+            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+            self._construct_mapping
+        )
 
         if 'root' in kwargs:
             self.root = kwargs['root']
@@ -65,6 +83,14 @@ class IncludeLoader(yaml.Loader):
             self.root = os.path.dirname(self.stream.name)
         else:
             self.root = os.path.curdir
+
+        self._mapping_type = kwargs.get('mapping_type', self.DEFAULT_MAPPING_TYPE)
+
+    def _construct_mapping(self, loader, node):
+        """Construct a mapping instance by making a :class:`Thing`."""
+
+        loader.flatten_mapping(node)
+        return self._mapping_type(loader.construct_pairs(node))
 
     def _include(self, loader, node):
         oldRoot = self.root
@@ -79,16 +105,6 @@ def yaml_load(stream):
     """Parse YAML from a stream and return the object."""
 
     return yaml.load(stream, IncludeLoader)
-
-
-class YamlCantLoad(Exception):
-    """Raised on an attempt to load YAML from something that is neither file nor directory."""
-
-    def __init__(self, path):
-        self.path = path
-
-    def __str__(self):
-        return "Can't read YAML from non-file, non-directory '{path}'".format(path=self.path)
 
 
 def yaml_load_path(path):

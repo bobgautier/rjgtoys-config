@@ -30,9 +30,9 @@ from typing import List, Any
 
 from rjgtoys.xc import Error, Title
 
-from rjgtoys.config._yaml import yaml_load_path
+from rjgtoys.config.thing import Thing
+from rjgtoys.config.yaml import yaml_load_path
 from rjgtoys.config._source import YamlFileConfigSource, SearchPathConfigSource
-
 
 
 class _ConfigAction(Action):
@@ -435,25 +435,26 @@ def config_normalise(raw):
     of any 'local' '__view__' with that of the 'defaults'.
     """
 
-    result = dict(raw)
+    result = Thing(raw)
 
     defaults = normalise_defaults(raw)
 
-    result['defaults'] = defaults
+    result.defaults = defaults
 
-    view = dict(defaults.get('__view__', {}))
-    local_view = raw.get('__view__', {})
+    view = Thing(defaults.get('__view__', {}))
+    local_view = raw.get('__view__')
 
-    config_merge(local_view, view)
+    if local_view:
+        config_merge(local_view, view)
 
-    result['__view__'] = view
+    result.__view__ = view
 
     return result
 
 def normalise_defaults(raw):
 
     try:
-        defaults = raw['defaults']
+        defaults = raw.defaults
     except KeyError:
         return {}
 
@@ -496,7 +497,7 @@ def resolve_defaults(raw):
 #    print("resolve_defaults %s" % (raw))
 
     try:
-        defaults = raw['defaults']
+        defaults = raw.defaults
     except KeyError:
         return {}
 
