@@ -23,9 +23,9 @@ class ConfigProxy:
 
     manager_type = ConfigManager
 
-    def __init__(self, model, manager_type=None):
+    def __init__(self, model, name=None, manager_type=None):
         self._model = model
-        self._modelname = "%s.%s" % (model.__module__, model.__qualname__)
+        self._modelname = name or "%s.%s" % (model.__module__, model.__qualname__)
 
         self._value = None
 
@@ -51,7 +51,7 @@ class ConfigProxy:
         schema = model.schema()
 
         view = self._get_view_dict(data, viewname, schema)
-        #print("_get_view %s is %s" % (viewname, view))
+        print("_get_view %s is %s" % (viewname, view))
         return model(**view)
 
     def _get_view_dict(self, data, viewname, schema):
@@ -60,7 +60,7 @@ class ConfigProxy:
 
         defaults = data['defaults']
 
-        #print("_get_view_dict data %s defaults %s" % (data, defaults))
+        print("_get_view_dict data %s defaults %s" % (data, defaults))
 
         if defaults:
             data_defaults = self._get_view_dict(defaults, viewname, schema)
@@ -69,7 +69,7 @@ class ConfigProxy:
 
         view = self._get_view_mapping(data, viewname, schema)
 
-        #print("Use view: %s" % (view))
+        print("Use view: %s" % (view))
 
         for n, k in view.items():
             try:

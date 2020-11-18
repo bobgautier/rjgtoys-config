@@ -119,10 +119,10 @@ class ConfigManager:
         cls.app_name = name
 
     @classmethod
-    def load(cls):
+    def load(cls, always=False):
         """Ensure the data is loaded."""
 
-        if cls.loaded:
+        if cls.loaded and not always:
             return
 
         if cls.source is None:
