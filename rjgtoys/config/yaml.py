@@ -70,6 +70,7 @@ class IncludeLoader(yaml.Loader):
 
     def __init__(self, *args, **kwargs):
         super(IncludeLoader, self).__init__(*args, **kwargs)
+
         self.add_constructor(self.DEFAULT_INCLUDE_TAG, self._include)
 
         self.add_constructor(
@@ -77,12 +78,14 @@ class IncludeLoader(yaml.Loader):
             self._construct_mapping
         )
 
+        self.root = os.path.curdir
         if 'root' in kwargs:
             self.root = kwargs['root']
-        elif isinstance(self.stream, io.IOBase):
-            self.root = os.path.dirname(self.stream.name)
         else:
-            self.root = os.path.curdir
+            try:
+                self.root = os.path.dirname(self.stream.name)
+            except AttributeError:
+                pass
 
         self._mapping_type = kwargs.get('mapping_type', self.DEFAULT_MAPPING_TYPE)
 
@@ -102,7 +105,10 @@ class IncludeLoader(yaml.Loader):
 
 
 def yaml_load(stream):
-    """Parse YAML from a stream and return the object."""
+    """Parse YAML from a stream or string, and return the object."""
+
+    if isinstance(stream, str):
+            stream = io.StringIO(stream)
 
     return yaml.load(stream, IncludeLoader)
 

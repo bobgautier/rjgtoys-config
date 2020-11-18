@@ -5,7 +5,9 @@ Tests for the config machinery.
 """
 
 from rjgtoys.config.thing import Thing
-from rjgtoys.config._config import Config, ConfigProxy, config_resolve, config_merge
+from rjgtoys.config._config import Config, ConfigProxy
+from rjgtoys.config._ops import config_resolve, config_merge
+
 
 def test_config_merge_to_empty():
     """Merging to an empty destination just copies."""
@@ -17,6 +19,7 @@ def test_config_merge_to_empty():
     config_merge(part, dest)
 
     assert dest == part
+
 
 def test_config_merge_simple():
     """Merging simple values works."""
