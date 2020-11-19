@@ -46,48 +46,6 @@ class Thing(dict):
         except KeyError:
             raise AttributeError(name)
 
-    def merge(self, other):
-        """A recursive 'update'.
-
-        Any members that are themselves mappings or sets
-        are also updated.
-        """
-
-        self.dict_merge(self, other)
-
-    @classmethod
-    def dict_merge(cls, dest, other):
-        """Merge one dict-like object into another."""
-
-#        print("merge %s into %s" % (other, dest))
-
-        for (k, v) in other.items():
-            try:
-                orig = dest[k]
-            except KeyError:
-                dest[k] = v
-                continue
-
-            # Maybe it's another Thing, or similar
-
-            try:
-                orig.merge(v)
-                continue
-            except AttributeError:
-                pass
-
-            # Maybe it's a dict or similar
-
-            if isinstance(orig, collections.abc.Mapping):
-                dict_merge(orig, v)
-                continue
-
-            # Can't do lists or sets yet
-
-            # By default, other takes precedence
-
-            dest[k] = v
-
     @classmethod
     def from_object(cls, src=None, **kwargs):
         """Ensure src is a cls, replacing all internals mappings by instances of cls too."""
