@@ -38,7 +38,13 @@ class Thing(dict):
 
         return self[prefix][tail]
 
-    __getattr__ = __getitem__
+    def __getattr__(self, name):
+        """As __getitem__ but raise AttributeError rather than KeyError"""
+
+        try:
+            return self.__getitem__(name)
+        except KeyError:
+            raise AttributeError(name)
 
     def merge(self, other):
         """A recursive 'update'.
@@ -84,7 +90,7 @@ class Thing(dict):
 
     @classmethod
     def from_object(cls, src=None, **kwargs):
-        """Deep-copy src replacing all mappings by instances of cls."""
+        """Ensure src is a cls, replacing all internals mappings by instances of cls too."""
 
         if kwargs:
             if src is not None:

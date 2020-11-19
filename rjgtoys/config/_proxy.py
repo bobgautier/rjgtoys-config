@@ -45,13 +45,12 @@ class ConfigProxy:
 
         self._value = self._get_view(data, self._modelname, self._model)
 
-
     def _get_view(self, data, viewname, model):
 
         schema = model.schema()
 
         view = self._get_view_dict(data, viewname, schema)
-        print("_get_view %s is %s" % (viewname, view))
+        #print("_get_view %s is %s" % (viewname, view))
         return model(**view)
 
     def _get_view_dict(self, data, viewname, schema):
@@ -60,16 +59,21 @@ class ConfigProxy:
 
         defaults = data['defaults']
 
-        print("_get_view_dict data %s defaults %s" % (data, defaults))
+        #print("*** START ***")
+        #print("_get_view_dict data %s defaults %s" % (data, defaults))
 
+        #print("Get default view dict")
         if defaults:
             data_defaults = self._get_view_dict(defaults, viewname, schema)
         else:
             data_defaults = {}
 
+        #print("Got default view dict")
+        #print("data_defaults: %s" % (data_defaults,))
+
         view = self._get_view_mapping(data, viewname, schema)
 
-        print("Use view: %s" % (view))
+        #print("Use view: %s" % (view))
 
         for n, k in view.items():
             try:
@@ -93,6 +97,10 @@ class ConfigProxy:
         # Fill in any missing fields; those map directly to their names in the data
 
         view.update({ n: n for n in schema['properties'].keys() if n not in view })
+
+        #print("view_mapping(%s)" % (viewname))
+        #print("data: %s" % (data))
+        #print("view mapping: %s" % (view))
 
         return view
 

@@ -7,6 +7,8 @@ import collections
 
 from rjgtoys.config.thing import Thing
 
+from copy import deepcopy
+
 
 def config_normalise(raw):
     """Normalise a config object to make it easier to process later.
@@ -22,7 +24,7 @@ def config_normalise(raw):
 
     result.defaults = defaults
 
-    view = Thing(defaults.get('__view__', {}))
+    view = deepcopy(defaults.get('__view__', {}))
     local_view = raw.get('__view__')
 
     if local_view:
@@ -37,7 +39,7 @@ def normalise_defaults(raw):
 
     try:
         defaults = raw.defaults
-    except KeyError:
+    except AttributeError:
         return {}
 
     # If only a single set of defaults, work around it
@@ -80,7 +82,7 @@ def resolve_defaults(raw):
 
     try:
         defaults = raw.defaults
-    except KeyError:
+    except AttributeError:
         return {}
 
     # If only a single set of defaults, work around it
