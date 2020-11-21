@@ -1,5 +1,5 @@
 
-from rjgtoys.config.thing import Thing
+from rjgtoys.thing import Thing
 from rjgtoys.config._ops import config_normalise, normalise_defaults
 
 def test_normalise_defaults_missing():

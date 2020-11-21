@@ -3,9 +3,9 @@ Operations on config data
 
 """
 
-import collections
+import collections.abc
 
-from rjgtoys.config.thing import Thing
+from rjgtoys.thing import Thing
 
 from copy import deepcopy
 

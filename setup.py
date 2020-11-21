@@ -20,5 +20,7 @@ setup(
     install_requires=[
         'ruamel.yaml',
         'rjgtoys-xc',
+        'rjgtoys-thing',
+        'rjgtoys-yaml',
     ]
 )

@@ -9,7 +9,7 @@ from typing import List
 
 from rjgtoys.xc import Error, Title
 
-from rjgtoys.config.yaml import yaml_load_path
+from rjgtoys.yaml import yaml_load_path
 
 
 class ConfigSearchFailed(Error):

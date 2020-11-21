@@ -26,8 +26,8 @@ from pydantic import BaseModel
 from rjgtoys.xc import Error, Title
 
 from rjgtoys.config._proxy import ConfigProxy
-from rjgtoys.config.thing import Thing
-from rjgtoys.config.yaml import yaml_load_path
+from rjgtoys.thing import Thing
+from rjgtoys.yaml import yaml_load_path
 
 
 class Config(BaseModel):

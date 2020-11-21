@@ -10,7 +10,7 @@ import pytest
 
 from rjgtoys.config import Config, ConfigProxy, ConfigManager
 
-from rjgtoys.config.yaml import yaml_load
+from rjgtoys.yaml import yaml_load
 
 class ConfigModel(Config):
 
