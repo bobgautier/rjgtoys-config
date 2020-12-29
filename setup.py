@@ -5,7 +5,7 @@ from rjgtoys.projects import setup
 
 setup(
     name = "rjgtoys-config",
-    version = "0.0.1",
+    version = "0.0.2",
     author = "Bob Gautier",
     author_email = "bob.gautier@gmail.com",
     description = ("A modular interface for configuration data"),
@@ -18,7 +18,7 @@ setup(
         "License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)"
         ],
     install_requires=[
-        'ruamel.yaml',
+        'pydantic',
         'rjgtoys-xc',
         'rjgtoys-thing',
         'rjgtoys-yaml',
