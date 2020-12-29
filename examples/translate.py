@@ -12,9 +12,9 @@ class TranslateConfig(Config):
 
     words: Dict[str, str]
 
-#cfg = getConfig(TranslateConfig)
+cfg = getConfig(TranslateConfig)
 
-cfg = TranslateConfig.value()
+#cfg = TranslateConfig.value()
 
 def main(argv=None):
 

@@ -5,7 +5,8 @@ Tests for the config machinery.
 """
 
 from rjgtoys.thing import Thing
-from rjgtoys.config._config import Config, ConfigProxy
+from rjgtoys.config import Config
+from rjgtoys.config._proxy import ConfigProxy
 from rjgtoys.config._ops import config_resolve, config_merge
 
 

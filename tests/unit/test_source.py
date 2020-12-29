@@ -5,13 +5,14 @@ Tests for config sources.
 
 import os
 
-from rjgtoys.config._config import Config, ConfigProxy
-from rjgtoys.config._source import ConfigSearchFailed
-
-
 from unittest.mock import sentinel
 
 import pytest
+
+from rjgtoys.config import Config
+from rjgtoys.config._proxy import ConfigProxy
+from rjgtoys.config._source import ConfigSearchFailed
+
 
 def test_use_default_search():
     """If we do nothing, loading will use the default search path."""

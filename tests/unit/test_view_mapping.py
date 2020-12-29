@@ -8,9 +8,13 @@ import json
 
 import pytest
 
-from rjgtoys.config import Config, ConfigProxy, ConfigManager
-
 from rjgtoys.yaml import yaml_load
+
+from rjgtoys.config import Config
+from rjgtoys.config._proxy import ConfigProxy
+from rjgtoys.config._manager import ConfigManager
+from rjgtoys.config._source import ConfigSource
+
 
 class ConfigModel(Config):
 
@@ -18,10 +22,11 @@ class ConfigModel(Config):
     b_str: str
 
 
-class StaticSource:
+class StaticSource(ConfigSource):
     """A config source that provides a literal."""
 
     def __init__(self, data):
+        super().__init__()
         self._data = yaml_load(data)
 
     def fetch(self):
@@ -31,7 +36,7 @@ class StaticSource:
 def test_view_map_default():
     """A default view map is applied correctly."""
 
-    proxy = ConfigProxy(ConfigModel)
+    cfg = ConfigProxy(ConfigModel)
 
     ConfigManager.source = StaticSource("""
 ---
@@ -41,16 +46,14 @@ b_str: "this is b"
 
     ConfigManager.load(always=True)
 
-    v = proxy.value
-
-    assert v.a_int == 2
-    assert v.b_str == "this is b"
+    assert cfg.a_int == 2
+    assert cfg.b_str == "this is b"
 
 
 def test_view_map_local():
     """A locally defined view map is applied correctly."""
 
-    proxy = ConfigProxy(ConfigModel, name='test.config.model')
+    cfg = ConfigProxy(ConfigModel, name='test.config.model')
 
     ConfigManager.source = StaticSource("""
 ---
@@ -69,16 +72,14 @@ __view__:
 
     ConfigManager.load(always=True)
 
-    v = proxy.value
-
-    assert v.a_int == 222
-    assert v.b_str == "remapped b"
+    assert cfg.a_int == 222
+    assert cfg.b_str == "remapped b"
 
 
 def test_view_map_from_defaults():
     """A view map found in defaults is applied correctly."""
 
-    proxy = ConfigProxy(ConfigModel, name='test.config.model')
+    cfg = ConfigProxy(ConfigModel, name='test.config.model')
 
     ConfigManager.source = StaticSource("""
 ---
@@ -98,16 +99,14 @@ defaults:
 
     ConfigManager.load(always=True)
 
-    v = proxy.value
-
-    assert v.a_int == 222
-    assert v.b_str == "remapped b"
+    assert cfg.a_int == 222
+    assert cfg.b_str == "remapped b"
 
 
 def test_view_map_gets_default():
     """A view map found in defaults is applied correctly and gets data from defaults"""
 
-    proxy = ConfigProxy(ConfigModel, name='test.config.model')
+    cfg = ConfigProxy(ConfigModel, name='test.config.model')
 
     ConfigManager.source = StaticSource("""
 ---
@@ -127,16 +126,14 @@ defaults:
 
     ConfigManager.load(always=True)
 
-    v = proxy.value
-
-    assert v.a_int == 222
-    assert v.b_str == "remapped b"
+    assert cfg.a_int == 222
+    assert cfg.b_str == "remapped b"
 
 
 def test_view_map_merges_views():
     """A view can be assembled from different mappings"""
 
-    proxy = ConfigProxy(ConfigModel, name='test.config.model')
+    cfg = ConfigProxy(ConfigModel, name='test.config.model')
 
     ConfigManager.source = StaticSource("""
 ---
@@ -191,10 +188,8 @@ defaults:
         "my_a": 222
     }
 
-    v = proxy.value
-
-    assert v.a_int == 222
-    assert v.b_str == "defaulted b"
+    assert cfg.a_int == 222
+    assert cfg.b_str == "defaulted b"
 
 
 

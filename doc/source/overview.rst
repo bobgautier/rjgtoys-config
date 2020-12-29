@@ -81,3 +81,6 @@ its components, and should do so in a form that makes sense to its users.
 Command line parser integration
 -------------------------------
 
+The API includes a method that will add a ``--config`` option to an :class:`argparse.ArgumentParser`
+and process the input, so that most of the business of dealing with the configuration
+source is handled in a single call.

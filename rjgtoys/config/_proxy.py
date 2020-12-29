@@ -1,4 +1,17 @@
+"""
 
+.. autofunction:: getConfig
+
+.. autoclass:: ConfigProxy
+   :members: __getattr__,add_arguments
+
+That's all there is to the main public interface; everything else
+is either internals or hooks to allow exotic use cases, and I've yet to
+document it.
+
+"""
+
+import os
 from argparse import Action
 import collections
 
@@ -13,12 +26,46 @@ class _ConfigAction(Action):
         ConfigManager.set_path(values)
 
 
-class ConfigProxy:
-    """A 'proxy' for the configuration data needed by a client module.
 
-    The proxy handles interaction with the source of configuration data
-    and provides some handy methods without interfering with the 'purity'
+#
+# Create an alias for ConfigProxy that's reminiscent of
+# logging.getLogger - and make it a function so that
+# Sphinx will document it as such
+#
+
+def getConfig(model,  name=None, manager_type=None):
+    """Creates an object that can access configuration data.
+
+    `model`
+       The class describing the configuration data that is needed.
+    `name`
+       A name for the configuration data type; it defaults to a name
+       derived from the module and class of `model`.
+       This name is used to look up the view mapping for this configuration
+       object.
+    `manager_type`
+       A class to manage configuration data.  Normally `None`, which
+       means use the default, which is :class:`rjgtoys.config._manager.ConfigManager`.
+
+    The returned value is a :class:`ConfigProxy`.
+
+    """
+
+    return ConfigProxy(model=model, name=name, manager_type=manager_type)
+
+
+class ConfigProxy:
+    """This class implements a 'proxy' for the configuration data needed by a client module,
+    and is what you get back when you call :func:`getConfig`, although it
+    tries hard to give the impression that you've actually got an instance of
+    your declared configuration model class.
+
+    A :class:`ConfigProxy` handles interaction with the source of configuration
+    data and provides some handy methods without interfering with the 'purity'
     of the configuration data model itself.
+
+    Refer to :func:`getConfig` for a description of the constructor parameters.
+
     """
 
     manager_type = ConfigManager
@@ -41,7 +88,7 @@ class ConfigProxy:
     __repr__ = __str__
 
     def update(self, data):
-        """Called when new configuration data is available."""
+        """Called (by a :class:`ConfigManager`) when new configuration data is available."""
 
         self._value = self._get_view(data, self._modelname, self._model)
 
@@ -169,22 +216,74 @@ class ConfigProxy:
         return self._getitem(data, q)
 
     def __getattr__(self, name):
+        """Attribute access to a :class:`ConfigProxy` is delegated to an
+        instance of the configuration model class that it was constructed
+        for, so the following accesses a `foo` attribute of an internal
+        instance of `MyConfig`::
+
+           cfg = getConfig(MyConfig)
+
+           x = cfg.foo
+
+        The proxy object ensures that configuration data has actually been
+        loaded and parsed before returning the attribute value.
+        """
+
         self._manager.load()
         return getattr(self._value, name)
 
-    @property
-    def value(self):
-        self._manager.load()
-        return self._value
-
     def add_arguments(self, parser, default=None, adjacent_to=None):
+        """Adds a ``--config`` option to an :class:`argparse.ArgumentParser`.
+
+        `parser`
+          The :class:`argparse.ArgumentParser` to which to add the option.
+        `default`
+          The default configuration file to read.
+        `adjacent_to`
+          An optional path used to derive a directory path to use for
+          relative configuration file paths.   For example if ``__file__`` is
+          passed here, then a configuration file ``config.yaml`` would be searched
+          for in the same directory as the calling module.
+
+        Because this is a method of :class:`ConfigProxy`, and because instances
+        of this class are returned from :func:`getConfig`, modules can usually do
+        this::
+
+            import argparse
+            from rjgtoys.config import Config, getConfig
+
+            class MyConfig(Config):
+               name: str
+
+            cfg = getConfig(MyConfig)
+
+            parser = argparse.ArgumentParser()
+
+            cfg.add_arguments(parser, default='myconfig.yaml')
+
+            parser.add_argument('--name', type=str, help="Your name")
+
+            args = parser.parse_args()
+
+            name = args.name or cfg.name
+
+            print(f"Hello, {name}!")
+
+        Note:
+
+          In the above, using `cfg.name` as the default for the
+          ``--name`` parameter (`default=cfg.name` in the `add_arguments` call)
+          won't work, because the configuration is not available until *after* the
+          `parse_args()` call has returned.
+
+        """
 
         # Get an 'application name' from the parser
         app_name = parser.prog.split('.',1)[0]
 
         self._manager.set_app_name(app_name)
 
-        if adjacent_to:
+        if adjacent_to and (default is not None):
             default = os.path.join(os.path.dirname(adjacent_to), default)
 
         # Use the default if none other can be found, or if none is specified
@@ -193,6 +292,7 @@ class ConfigProxy:
 
         parser.add_argument(
             '--config',
+            metavar="PATH",
             type=str,
             help="Path to configuration file",
             action=_ConfigAction,

@@ -244,4 +244,8 @@ man_pages = [
 
 # Include only the class docstring in autoclass output
 
-autoclass_content = 'both'
+autoclass_content = 'class'
+
+# Don't use base class docstrings, if no local one is provided.
+
+autodoc_inherit_docstrings = False

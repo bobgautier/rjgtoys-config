@@ -1,16 +1,12 @@
 """
 
-Config mechanism exports
+.. autoclass:: rjgtoys.config.Config
+
+.. automodule:: rjgtoys.config._proxy
 
 """
 
 from rjgtoys.config._config import Config
-from rjgtoys.config._proxy import ConfigProxy
-from rjgtoys.config._manager import ConfigManager
+from rjgtoys.config._proxy import getConfig
 
-#
-# Create a name for ConfigProxy that's reminiscent of
-# logging.getLogger
-#
-
-getConfig = ConfigProxy
+__all__ = ('Config', 'getConfig')

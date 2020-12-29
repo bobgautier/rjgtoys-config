@@ -1,58 +1,44 @@
 """
 
-Configuration data management.
-
-Provide modules with access to 'configuration' data.
-
-That data often comes from a 'configuration file' that is loaded
-at application startup time.
-
-The configuration data provides parameters that are inconvenient to
-specify in other ways and which need to be varied relatively infrequently.
-
+.. autoclass:: Config
 
 """
 
-import sys
-import os
-
-import collections
-
-from typing import Optional, Callable
 
 from pydantic import BaseModel
 
 
-from rjgtoys.xc import Error, Title
-
-from rjgtoys.config._proxy import ConfigProxy
-from rjgtoys.thing import Thing
-from rjgtoys.yaml import yaml_load_path
-
-
 class Config(BaseModel):
-    """A base class for configuration parameter objects.
+    """This is the base class for configuration parameter objects.
 
-    A convenient alias for :cls:`pydantic.BaseModel`.
+    It is little more than a convenient alias for :class:`pydantic.BaseModel`.
+
+    To define your own configuration parameter structure, you should
+    create a subclass and define attributes of whatever types you need.
+
+    This class contains an internal :class:`Config` class which provides
+    configuration parameters to Pydantic.  The parameter `arbitrary_types_allowed`
+    is set `True` (see arbitrary_types_allowed_ in the Pydantic documentation
+    for a full description)
+
+.. _arbitrary_types_allowed: https://pydantic-docs.helpmanual.io/usage/types/#arbitrary-types-allowed
+
+    Amy module that requires configuration data should declare a subclass
+    to contain the necessary data, and then call :func:`rjgtoys.config.getConfig`
+    on it to return a suitable proxy::
+
+        from rjgtoys.config import Config, getConfig
+
+        class MyConfig(Config):
+           name: str
+
+        cfg = getConfig(MyConfig)
+
+        print(f"Hello, {cfg.name}!")
 
     """
 
-    # The following is an alternative to the getConfig()
-    # function below.  I added it in the hope of avoiding
-    # having too many things to import from rjgtoys.config
-    # (you can just import the Config class, now) but on the
-    # other hand it gets a bit mixed up with the pydantic
-    # machinery; pydantic thinks the constructor takes
-    # a proxy_type parameter.
+    class Config:
+        """Tell pydantic to allow arbitrary attribute types."""
 
-    proxy_type: Optional[Callable] = ConfigProxy
-
-    @classmethod
-    def value(cls, other=None, proxy_type=None):
-
-        other = other or cls
-
-        proxy_type = proxy_type or other.proxy_type
-
-        return proxy_type(other or cls)
-
+        arbitrary_types_allowed = True
