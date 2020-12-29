@@ -51,7 +51,6 @@ class YamlFileConfigSource(ConfigSource):
         path = self.resolve(self.path)
 
         data = yaml_load_path(path)
-
         return data
 
 
