@@ -14,8 +14,6 @@ class TranslateConfig(Config):
 
 cfg = getConfig(TranslateConfig)
 
-#cfg = TranslateConfig.value()
-
 def main(argv=None):
 
     p = argparse.ArgumentParser()
