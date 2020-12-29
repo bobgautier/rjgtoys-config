@@ -1,3 +1,4 @@
 pydantic
 sphinx_autodoc_typehints
+rjgtoys-thing
 rjgtoys-xc
