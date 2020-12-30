@@ -48,8 +48,8 @@ found by default, and so to use it, the script should invoked as follows::
   dog: chien
   budgie: I don't know that word
 
-Incuding defaults
------------------
+Including defaults
+------------------
 
 One obvious way to make this dictionary available as the default would be to copy
 or rename the file to ``translate.yaml``, but another way would be to make a new
@@ -58,9 +58,9 @@ or rename the file to ``translate.yaml``, but another way would be to make a new
   # examples/translate.yaml: Default configuration file, using specific dictionary
   defaults: !include english-french.yaml
 
-The ``!include`` directive (a YAML extension) causes the
+The ``!include`` tag (a YAML tag provided by rjgtoys.yaml_) causes the
 content of the named file to be inserted in
-place of the directive itself, so the above is equivalent to::
+place of the tag, so the above is equivalent to::
 
   defaults:
     words:
@@ -96,3 +96,4 @@ The above is equivalent to::
      bird: oiseau
      snail: escargot
 
+.. _rjgtoys.yaml: https://rjgtoys.readthedocs.io/projects/yaml/en/latest/
